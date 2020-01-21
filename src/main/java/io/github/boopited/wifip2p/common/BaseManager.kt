@@ -13,6 +13,10 @@ abstract class BaseManager(protected val context: Context): WifiP2pStateMonitor.
 
     private val stateMonitor = WifiP2pStateMonitor.get(context)
 
+    init {
+        check(WifiUtils.checkWifiSupport(context))
+    }
+
     @CallSuper
     open fun start() {
         stateMonitor.addCallback(this)

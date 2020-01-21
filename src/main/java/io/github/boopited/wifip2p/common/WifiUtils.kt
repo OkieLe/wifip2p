@@ -12,6 +12,15 @@ object WifiUtils {
         Manifest.permission.ACCESS_FINE_LOCATION
     )
 
+    fun checkWifiSupport(context: Context): Boolean {
+        if (!context.packageManager.hasSystemFeature(PackageManager.FEATURE_WIFI)) {
+            Log.w("WifiUtils", "Wifi is not supported")
+            return false
+        }
+
+        return true
+    }
+
     fun checkWifiDirectSupport(context: Context): Boolean {
         if (!context.packageManager.hasSystemFeature(PackageManager.FEATURE_WIFI_DIRECT)) {
             Log.w("WifiUtils", "Wifi direct is not supported")
