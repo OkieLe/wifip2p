@@ -3,7 +3,6 @@ package io.github.boopited.wifip2p.service
 import android.content.Context
 import android.net.wifi.p2p.WifiP2pDevice
 import android.net.wifi.p2p.WifiP2pManager
-import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceRequest
 import android.net.wifi.p2p.nsd.WifiP2pServiceInfo
 import android.os.Looper
 import io.github.boopited.wifip2p.WifiP2pStateMonitor
@@ -22,7 +21,7 @@ class P2pServiceFinder(
     private var channel: WifiP2pManager.Channel by Delegates.notNull()
 
     private var wifiP2pEnabled = false
-    private val serviceRequest by lazy { WifiP2pDnsSdServiceRequest.newInstance() }
+    private val serviceRequest by lazy { createServiceRequest(serviceType) }
 
     interface Callback {
         fun onP2pEnabled(enable: Boolean)
