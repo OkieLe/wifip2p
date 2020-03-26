@@ -1,22 +1,18 @@
 package io.github.boopited.wifip2p
 
 import android.content.Context
-import android.net.NetworkInfo
 import android.net.wifi.p2p.*
-import android.os.Looper
 import io.github.boopited.wifip2p.common.BaseManager
 import io.github.boopited.wifip2p.p2p.createConfig
 import io.github.boopited.wifip2p.p2p.createGroup
+import io.github.boopited.wifip2p.p2p.queryGroupInfo
 import io.github.boopited.wifip2p.p2p.removeGroup
-import kotlin.properties.Delegates
 
 class GroupOwnerManager(
     context: Context, private val callback: Callback,
     groupName: String? = null, groupPassphrase: String? = null
 ): BaseManager(context) {
 
-    private var manager: WifiP2pManager by Delegates.notNull()
-    private var channel: WifiP2pManager.Channel by Delegates.notNull()
     private val config: WifiP2pConfig? =
         if (groupName.isNullOrBlank() || groupPassphrase.isNullOrBlank()) {
             null
@@ -25,23 +21,19 @@ class GroupOwnerManager(
         }
 
     interface Callback {
-        fun onChannelDisconnected()
-        fun onGroupCreated(success: Boolean)
-        fun onGroupInfo(group: WifiP2pGroup?)
-        fun onClientsChanged(clients: List<WifiP2pDevice>)
         fun onP2pEnabled(enable: Boolean)
-    }
-
-    init {
-        manager = context.getSystemService(Context.WIFI_P2P_SERVICE) as WifiP2pManager
-        channel = manager.initialize(context, Looper.getMainLooper()) {
-            callback.onChannelDisconnected()
-        }
+        fun onGroupCreated(success: Boolean)
+        fun onGroupFormed()
+        fun onClientsList(clients: List<WifiP2pDevice>)
     }
 
     override fun start() {
         super.start()
-        startGroup()
+        if (isWifiP2pEnabled()) {
+            startGroup()
+        } else {
+            throw IllegalStateException("Enable wifi p2p first")
+        }
     }
 
     private fun startGroup() {
@@ -50,6 +42,17 @@ class GroupOwnerManager(
         }, {
             callback.onGroupCreated(false)
         })
+    }
+
+    private fun getClients(): List<WifiP2pDevice> {
+        return getGroupInfo()?.clientList.orEmpty().toList()
+    }
+
+    fun refreshGroup() {
+        manager.queryGroupInfo(channel) { group ->
+            p2pGroup = group
+            callback.onClientsList(getClients())
+        }
     }
 
     private fun stopGroup() {
@@ -61,19 +64,21 @@ class GroupOwnerManager(
         super.stop()
     }
 
-    override fun onWifiP2pState(enable: Boolean) {
-        super.onWifiP2pState(enable)
+    override fun onWifiP2pEnabled(enable: Boolean) {
+        super.onWifiP2pEnabled(enable)
         callback.onP2pEnabled(enable)
     }
 
-    override fun onConnectionChanged(
-        p2pInfo: WifiP2pInfo?,
-        networkInfo: NetworkInfo?,
-        groupInfo: WifiP2pGroup?
-    ) {
-        super.onConnectionChanged(p2pInfo, networkInfo, groupInfo)
-        callback.onGroupInfo(groupInfo)
-        callback.onClientsChanged(groupInfo?.clientList.orEmpty().toList())
+    override fun onConnectionInfo(info: WifiP2pInfo?) {
+        super.onConnectionInfo(info)
+        if (info?.groupFormed == true) {
+            callback.onGroupFormed()
+        }
+    }
+
+    override fun onGroupInfo(info: WifiP2pGroup?) {
+        super.onGroupInfo(info)
+        callback.onClientsList(getClients())
     }
 
     companion object {

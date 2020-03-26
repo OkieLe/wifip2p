@@ -11,9 +11,9 @@ class WifiP2pStateMonitor(private val context: Context) {
 
     interface StateCallback {
         fun onWifiP2pState(enable: Boolean)
-        fun onConnectionChanged(p2pInfo: WifiP2pInfo?, networkInfo: NetworkInfo?, groupInfo: WifiP2pGroup?)
+        fun onConnectionChanged(connected: Boolean)
         fun onDeviceInfoChanged(device: WifiP2pDevice?)
-        fun onPeersChanged(deviceList: WifiP2pDeviceList?)
+        fun onPeersChanged()
         fun onDiscoveryStateChanged(start: Boolean)
     }
 
@@ -68,11 +68,9 @@ class WifiP2pStateMonitor(private val context: Context) {
                  * the connection of wifi p2p changed
                  */
                 WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION -> {
-                    val p2pInfo = intent.getParcelableExtra<WifiP2pInfo>(WifiP2pManager.EXTRA_WIFI_P2P_INFO)
                     val networkInfo = intent.getParcelableExtra<NetworkInfo>(WifiP2pManager.EXTRA_NETWORK_INFO)
-                    val groupInfo = intent.getParcelableExtra<WifiP2pGroup>(WifiP2pManager.EXTRA_WIFI_P2P_GROUP)
                     stateCallbacks.forEach {
-                        it.onConnectionChanged(p2pInfo, networkInfo, groupInfo)
+                        it.onConnectionChanged(networkInfo?.isConnected == true)
                     }
                 }
 
@@ -90,9 +88,8 @@ class WifiP2pStateMonitor(private val context: Context) {
                  * invoke when the list of peers find, register, lost
                  */
                 WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION -> {
-                    val devices = intent.getParcelableExtra<WifiP2pDeviceList>(WifiP2pManager.EXTRA_P2P_DEVICE_LIST)
                     stateCallbacks.forEach {
-                        it.onPeersChanged(devices)
+                        it.onPeersChanged()
                     }
                 }
 
