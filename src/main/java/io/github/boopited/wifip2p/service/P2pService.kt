@@ -1,12 +1,36 @@
-package io.github.boopited.wifip2p.p2p
+package io.github.boopited.wifip2p.service
 
 import android.net.wifi.p2p.WifiP2pDevice
 import android.net.wifi.p2p.WifiP2pManager
-import android.net.wifi.p2p.nsd.WifiP2pServiceInfo
-import android.net.wifi.p2p.nsd.WifiP2pServiceRequest
+import android.net.wifi.p2p.nsd.*
 import android.util.Log
 
 private const val TAG = "P2pService"
+
+fun createDnsSdServiceInfo(
+    serviceName: String,
+    registrationType: String,
+    records: Map<String, String>
+): WifiP2pServiceInfo {
+    return WifiP2pDnsSdServiceInfo.newInstance(serviceName, registrationType, records)
+}
+
+fun createUPnpServiceInfo(
+    serviceName: String,
+    registrationType: String,
+    services: List<String>
+): WifiP2pServiceInfo {
+    return WifiP2pUpnpServiceInfo.newInstance(serviceName, registrationType, services)
+}
+
+fun createServiceRequest(type: Int, data: String? = null): WifiP2pServiceRequest {
+    return when (type) {
+        WifiP2pServiceInfo.SERVICE_TYPE_BONJOUR -> WifiP2pDnsSdServiceRequest.newInstance()
+        WifiP2pServiceInfo.SERVICE_TYPE_UPNP -> WifiP2pUpnpServiceRequest.newInstance()
+        WifiP2pServiceInfo.SERVICE_TYPE_VENDOR_SPECIFIC -> WifiP2pServiceRequest.newInstance(type, data)
+        else -> WifiP2pServiceRequest.newInstance(WifiP2pServiceInfo.SERVICE_TYPE_ALL, data)
+    }
+}
 
 fun WifiP2pManager.addService(
     channel: WifiP2pManager.Channel, service: WifiP2pServiceInfo,
@@ -140,4 +164,11 @@ fun WifiP2pManager.listenUPnpResponse(
     serviceResponseListener: ((List<String>, WifiP2pDevice) -> Unit)? = null
 ) {
     setUpnpServiceResponseListener(channel, serviceResponseListener)
+}
+
+fun WifiP2pManager.listenServiceResponse(
+    channel: WifiP2pManager.Channel,
+    listener: ((Int, ByteArray, WifiP2pDevice) -> Unit)? = null
+) {
+    setServiceResponseListener(channel, listener)
 }
