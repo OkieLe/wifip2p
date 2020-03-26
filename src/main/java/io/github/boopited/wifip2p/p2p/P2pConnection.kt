@@ -1,8 +1,7 @@
 package io.github.boopited.wifip2p.p2p
 
-import android.net.wifi.WpsInfo
-import android.net.wifi.p2p.WifiP2pConfig
 import android.net.wifi.p2p.WifiP2pDevice
+import android.net.wifi.p2p.WifiP2pInfo
 import android.net.wifi.p2p.WifiP2pManager
 import android.util.Log
 
@@ -11,17 +10,21 @@ private const val TAG = "P2pConnection"
 /**
  * connect by MAC address(hardware address)
  */
-fun connect(manager: WifiP2pManager, channel: WifiP2pManager.Channel, deviceAddress: String) {
-    val config = WifiP2pConfig()
-    config.deviceAddress = deviceAddress
-    config.wps.setup = WpsInfo.PBC
-    manager.connect(channel, config, object : WifiP2pManager.ActionListener {
+fun WifiP2pManager.connect(
+    channel: WifiP2pManager.Channel,
+    deviceAddress: String,
+    success: (() -> Unit)? = null, failure: ((Int) -> Unit)? = null
+) {
+    val config = createConfig(deviceAddress)
+    connect(channel, config, object : WifiP2pManager.ActionListener {
         override fun onSuccess() {
             Log.d(TAG, "connect device success")
+            success?.invoke()
         }
 
         override fun onFailure(reason: Int) {
             Log.d(TAG, "connect device fail: $reason")
+            failure?.invoke(reason)
         }
     })
 }
@@ -29,24 +32,34 @@ fun connect(manager: WifiP2pManager, channel: WifiP2pManager.Channel, deviceAddr
 /**
  * invoke this method to connect a p2p device
  */
-fun connect(manager: WifiP2pManager, channel: WifiP2pManager.Channel, device: WifiP2pDevice) {
-    connect(manager, channel, device.deviceAddress)
+fun WifiP2pManager.connect(
+    channel: WifiP2pManager.Channel,
+    device: WifiP2pDevice,
+    success: (() -> Unit)? = null, failure: ((Int) -> Unit)? = null
+) {
+    connect(channel, device.deviceAddress, success, failure)
 }
 
-fun cancelConnect(manager: WifiP2pManager, channel: WifiP2pManager.Channel) {
-    manager.cancelConnect(channel, object : WifiP2pManager.ActionListener {
+fun WifiP2pManager.cancelConnect(
+    channel: WifiP2pManager.Channel,
+    success: (() -> Unit)? = null, failure: ((Int) -> Unit)? = null
+) {
+    cancelConnect(channel, object : WifiP2pManager.ActionListener {
         override fun onSuccess() {
             Log.d(TAG, "connect cancel success")
+            success?.invoke()
         }
 
         override fun onFailure(reason: Int) {
             Log.d(TAG, "connect cancel fail: $reason")
+            failure?.invoke(reason)
         }
     })
 }
 
-fun requestConnectionInfo(manager: WifiP2pManager, channel: WifiP2pManager.Channel) {
-    manager.requestConnectionInfo(channel) { p2pinfo ->
-
-    }
+fun WifiP2pManager.queryConnectionInfo(
+    channel: WifiP2pManager.Channel,
+    infoListener: ((WifiP2pInfo) -> Unit)? = null
+) {
+    requestConnectionInfo(channel, infoListener)
 }
